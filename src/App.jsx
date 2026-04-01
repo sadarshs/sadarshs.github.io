@@ -66,7 +66,6 @@ function SkillBar({ name, level }) {
 function ProjectCard({ project, i }) {
   const cardEl = useRef(null);
   const handleMove = (e) => {
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
     const el = cardEl.current; if (!el) return;
     const r = el.getBoundingClientRect();
     const rx = ((e.clientY - r.top) / r.height - 0.5) * -14;
@@ -83,7 +82,6 @@ function ProjectCard({ project, i }) {
     <FadeUp delay={0.1 * i} style={{ height: "100%" }}>
       <div
         ref={cardEl}
-        className="project-card"
         onMouseMove={handleMove}
         onMouseLeave={handleLeave}
         style={{
@@ -118,7 +116,7 @@ function ProjectCard({ project, i }) {
         </div>
 
         {/* mock UI preview */}
-        <div className="project-preview" style={{
+        <div style={{
           background: "#fff", borderRadius: 16, height: 148, marginBottom: 26,
           padding: "14px 16px 16px", boxShadow: "0 6px 24px rgba(0,0,0,.07)",
           display: "flex", flexDirection: "column", gap: 7, overflow: "hidden",
@@ -198,46 +196,11 @@ const EXPERIENCE = [
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
-const NAV_ITEMS = ["Work", "About", "Projects", "Experience", "Contact"];
-
 export default function Portfolio() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [reduceMotion, setReduceMotion] = useState(false);
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    if (menuOpen) document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updateMotionPreference = () => setReduceMotion(media.matches);
-    updateMotionPreference();
-    media.addEventListener?.("change", updateMotionPreference);
-    return () => media.removeEventListener?.("change", updateMotionPreference);
-  }, []);
-
-  useEffect(() => {
-    const closeMenuOnDesktop = () => {
-      if (window.innerWidth > 720) setMenuOpen(false);
-    };
-    window.addEventListener("resize", closeMenuOnDesktop);
-    return () => window.removeEventListener("resize", closeMenuOnDesktop);
-  }, []);
-
-  useEffect(() => {
-    const handleEscape = (event) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, []);
 
   /* Google Fonts injection */
   useEffect(() => {
@@ -251,10 +214,7 @@ export default function Portfolio() {
   /* Three.js hero scene */
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || reduceMotion) {
-      setLoaded(true);
-      return;
-    }
+    if (!canvas) return;
     const parent = canvas.parentElement;
     let mounted = true;
     let renderer;
@@ -347,7 +307,7 @@ export default function Portfolio() {
       window.removeEventListener("resize", onResize);
       renderer?.dispose();
     };
-  }, [reduceMotion]);
+  }, []);
 
   /* Mouse + Scroll */
   const handleMouse = useCallback((e) => {
@@ -358,24 +318,15 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    if (reduceMotion) return undefined;
     window.addEventListener("mousemove", handleMouse);
     return () => window.removeEventListener("mousemove", handleMouse);
-  }, [handleMouse, reduceMotion]);
+  }, [handleMouse]);
 
   /* ─── Styles ─────────────────────────────────────────────────────────── */
   const heroAnim = (delay) =>
-    reduceMotion
-      ? { opacity: 1, transform: "none" }
-      :
     loaded
       ? { animation: `heroUp 1.35s cubic-bezier(.16,1,.3,1) ${delay}s both` }
       : { opacity: 0 };
-
-  const scrollToSection = (section) => {
-    document.getElementById(section.toLowerCase())?.scrollIntoView({ behavior: "smooth" });
-    setMenuOpen(false);
-  };
 
   return (
     <>
@@ -404,12 +355,7 @@ export default function Portfolio() {
 
         html { scroll-behavior:smooth; }
         * { box-sizing:border-box; margin:0; padding:0; }
-        body { overflow-x:hidden; touch-action:pan-y; }
-        a, button, input, textarea { -webkit-tap-highlight-color: transparent; }
-        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
-          outline:3px solid rgba(125,216,164,.9);
-          outline-offset:3px;
-        }
+        body { overflow-x:hidden; }
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-track { background:#f2efe8; }
         ::-webkit-scrollbar-thumb { background:#7dd8a4; border-radius:4px; }
@@ -422,67 +368,6 @@ export default function Portfolio() {
           transition:background .25s,color .25s;
         }
         .nav-a:hover { background:rgba(255,255,255,.12); color:#fff; }
-        .nav-shell {
-          width:min(92vw,780px);
-          justify-content:space-between;
-          position:relative;
-        }
-        .desktop-nav {
-          display:flex;
-          align-items:center;
-          gap:4px;
-        }
-        .mobile-nav-toggle,
-        .mobile-nav-panel { display:none; }
-        .mobile-nav-toggle {
-          font-family:'Syne',sans-serif;
-          font-size:13px;
-          font-weight:700;
-          color:#e6fff0;
-          background:rgba(255,255,255,.08);
-          border:1px solid rgba(168,216,188,.18);
-          border-radius:999px;
-          padding:10px 16px;
-          min-height:44px;
-        }
-        .mobile-nav-panel {
-          position:absolute;
-          top:100%;
-          left:50%;
-          transform:translate(-50%,-8px);
-          width:min(92vw,420px);
-          margin-top:12px;
-          padding:14px;
-          border-radius:24px;
-          background:rgba(12,31,20,.94);
-          backdrop-filter:blur(22px);
-          border:1px solid rgba(100,180,140,.18);
-          box-shadow:0 18px 48px rgba(0,0,0,.28);
-          opacity:0;
-          pointer-events:none;
-          transition:opacity .25s ease, transform .25s ease;
-        }
-        .mobile-nav-panel.open {
-          opacity:1;
-          pointer-events:auto;
-          transform:translate(-50%,0);
-        }
-        .mobile-nav-link {
-          display:block;
-          width:100%;
-          font-family:'Syne',sans-serif;
-          font-size:15px;
-          font-weight:700;
-          color:#d4efde;
-          text-align:left;
-          text-decoration:none;
-          background:transparent;
-          border:none;
-          border-radius:16px;
-          padding:14px 16px;
-          min-height:48px;
-        }
-        .mobile-nav-link:hover { background:rgba(255,255,255,.08); }
 
         .star { animation: starPulse 3.5s ease-in-out infinite; }
         .star2 { animation: starPulse 3.5s ease-in-out 1.2s infinite; }
@@ -495,7 +380,6 @@ export default function Portfolio() {
           box-shadow:0 10px 36px rgba(26,92,58,.4);
           transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s ease;
           letter-spacing:.01em;
-          min-height:52px;
         }
         .cta-primary:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 16px 44px rgba(26,92,58,.5); }
 
@@ -505,7 +389,6 @@ export default function Portfolio() {
           border:1.5px solid rgba(168,216,188,.35); padding:15px 32px;
           border-radius:100px; cursor:pointer; letter-spacing:.01em;
           transition:background .25s,border-color .25s,transform .3s cubic-bezier(.16,1,.3,1);
-          min-height:52px;
         }
         .cta-ghost:hover { background:rgba(255,255,255,.14); border-color:rgba(168,216,188,.6); transform:translateY(-2px); }
 
@@ -549,7 +432,6 @@ export default function Portfolio() {
           cursor:pointer; letter-spacing:.02em;
           box-shadow:0 8px 30px rgba(26,92,58,.35);
           transition:transform .3s cubic-bezier(.16,1,.3,1),box-shadow .3s;
-          min-height:54px;
         }
         .form-btn:hover { transform:translateY(-2px); box-shadow:0 14px 40px rgba(26,92,58,.45); }
 
@@ -560,118 +442,16 @@ export default function Portfolio() {
         }
         .footer-link:hover { color:#2d7a50; }
 
-        .section-shell {
-          padding-inline:max(24px, env(safe-area-inset-left));
-          padding-right:max(24px, env(safe-area-inset-right));
-        }
-        .hero-shell {
-          padding:calc(110px + env(safe-area-inset-top)) 24px calc(64px + env(safe-area-inset-bottom));
-        }
-        .hero-copy { width:min(100%, 760px); }
-        .hero-actions {
-          display:flex;
-          gap:16px;
-          margin-top:44px;
-          flex-wrap:wrap;
-          justify-content:center;
-        }
-        .contact-socials {
-          display:flex;
-          justify-content:center;
-          gap:28px;
-          margin-top:48px;
-          flex-wrap:wrap;
-        }
-        .footer-inner {
-          display:flex;
-          justify-content:space-between;
-          align-items:center;
-          flex-wrap:wrap;
-          gap:12px;
-        }
-
-        @media(hover:hover) and (pointer:fine){
-          .project-card:hover {
-            box-shadow:0 18px 46px rgba(0,0,0,.12) !important;
-          }
-        }
-
-        @media(hover:none), (pointer:coarse){
-          .nav-a, .footer-link { padding-block:10px; }
-          .project-card {
-            transform:none !important;
-            transition:box-shadow .2s ease !important;
-          }
-          .star, .star2 { animation-duration:6s; }
-        }
-
-        @media(max-width:960px){
-          .section-shell { padding-inline:20px; }
-          .project-card { padding:28px 24px 24px !important; border-radius:22px !important; }
-          .project-preview { height:132px !important; margin-bottom:22px !important; }
-          .projects-grid { grid-template-columns:1fr !important; }
-          .about-grid { grid-template-columns:1fr !important; gap:52px !important; }
-        }
         @media(max-width:720px){
-          .nav-shell {
-            width:min(calc(100vw - 24px), 520px);
-            padding:8px 10px !important;
-          }
-          .desktop-nav { display:none; }
-          .mobile-nav-toggle,
-          .mobile-nav-panel { display:block; }
-          .hero-shell {
-            min-height:100svh !important;
-            justify-content:flex-start !important;
-            padding:calc(128px + env(safe-area-inset-top)) 20px calc(84px + env(safe-area-inset-bottom));
-          }
-          .hero-copy {
-            width:100%;
-            max-width:560px;
-          }
-          .hero-actions {
-            width:100%;
-            flex-direction:column;
-            align-items:stretch;
-            gap:12px;
-          }
-          .cta-primary, .cta-ghost {
-            width:100%;
-            padding-inline:20px;
-          }
-          .section-shell { padding-inline:16px; }
-          .contact-socials {
-            flex-direction:column;
-            gap:14px;
-            margin-top:36px;
-          }
-          .footer-inner {
-            flex-direction:column;
-            align-items:flex-start;
-          }
-        }
-        @media(max-width:480px){
-          .project-card { padding:24px 18px 20px !important; }
-          .project-preview { height:118px !important; padding:12px 14px 14px !important; }
-          .section-shell { padding-inline:14px; }
-          .section-label { font-size:10px; letter-spacing:.14em; }
-          .footer-link { font-size:14px; }
-        }
-
-        @media(prefers-reduced-motion:reduce){
-          html { scroll-behavior:auto; }
-          *, *::before, *::after {
-            animation-duration:.01ms !important;
-            animation-iteration-count:1 !important;
-            transition-duration:.01ms !important;
-          }
+          .about-grid { grid-template-columns:1fr !important; gap:48px !important; }
+          .projects-grid { grid-template-columns:1fr !important; }
         }
       `}</style>
 
       {/* ── NAVBAR ───────────────────────────────────────────────────────── */}
       <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:50, display:"flex", justifyContent:"center", paddingTop:22 }}>
         <div
-          className="nav-pill nav-shell"
+          className="nav-pill"
           style={{
             display:"flex", alignItems:"center", gap:4,
             padding:"8px 12px", borderRadius:100,
@@ -680,31 +460,8 @@ export default function Portfolio() {
             boxShadow:"0 4px 30px rgba(0,0,0,.25)",
           }}
         >
-          <div className="desktop-nav">
-            {NAV_ITEMS.map((n) => (
-              <a key={n} href={`#${n.toLowerCase()}`} className="nav-a">{n}</a>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="mobile-nav-toggle"
-            aria-expanded={menuOpen}
-            aria-label="Toggle navigation menu"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? "Close" : "Menu"}
-          </button>
-        </div>
-        <div className={`mobile-nav-panel ${menuOpen ? "open" : ""}`}>
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              className="mobile-nav-link"
-              onClick={() => scrollToSection(item)}
-            >
-              {item}
-            </button>
+          {["Work","About","Projects","Contact"].map(n => (
+            <a key={n} href={`#${n.toLowerCase()}`} className="nav-a">{n}</a>
           ))}
         </div>
       </nav>
@@ -714,18 +471,7 @@ export default function Portfolio() {
         background:"linear-gradient(155deg,#081a10 0%,#0f2a1a 30%,#173324 55%,#1e3f2c 75%,#152c1e 100%)" }}>
 
         {/* Three.js canvas */}
-        <canvas
-          ref={canvasRef}
-          aria-hidden="true"
-          style={{
-            position:"absolute",
-            inset:0,
-            width:"100%",
-            height:"100%",
-            pointerEvents:"none",
-            opacity: reduceMotion ? 0 : 1,
-          }}
-        />
+        <canvas ref={canvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", pointerEvents:"none" }} />
 
         {/* Noise grain */}
         <div style={{
@@ -741,7 +487,7 @@ export default function Portfolio() {
         }} />
 
         {/* Hero content */}
-        <div className="hero-shell" style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", textAlign:"center" }}>
+        <div style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", textAlign:"center", padding:"100px 24px 60px" }}>
 
           {/* Sparkle decorators */}
           <div className="star" style={{ position:"absolute", top:"22%", left:"14%", color:"rgba(140,220,170,.7)", fontSize:22, userSelect:"none" }}>✦</div>
@@ -749,7 +495,7 @@ export default function Portfolio() {
           <div className="star" style={{ position:"absolute", bottom:"28%", left:"8%", color:"rgba(140,220,170,.45)", fontSize:13, userSelect:"none", animationDelay:"2s" }}>✦</div>
 
           {/* Status badge */}
-          <div className="hero-copy" style={{ ...heroAnim(.15) }}>
+          <div style={{ ...heroAnim(.15) }}>
             <div style={{
               display:"inline-flex", alignItems:"center", gap:8,
               background:"rgba(60,160,100,.15)", border:"1px solid rgba(100,200,140,.22)",
@@ -764,7 +510,7 @@ export default function Portfolio() {
           </div>
 
           {/* Main headline */}
-          <div className="hero-copy" style={{ ...heroAnim(.3) }}>
+          <div style={{ ...heroAnim(.3) }}>
             <h1 style={{
               fontFamily:"'Syne',sans-serif", fontWeight:800,
               fontSize:"clamp(3.2rem,10.5vw,8.2rem)",
@@ -774,7 +520,7 @@ export default function Portfolio() {
               Hi. I'm Sadarsh.
             </h1>
           </div>
-          <div className="hero-copy" style={{ ...heroAnim(.5) }}>
+          <div style={{ ...heroAnim(.5) }}>
             <h1 style={{
               fontFamily:"'Syne',sans-serif", fontWeight:800,
               fontSize:"clamp(2.6rem,9vw,7rem)",
@@ -786,7 +532,7 @@ export default function Portfolio() {
           </div>
 
           {/* Sub */}
-          <div className="hero-copy" style={{ ...heroAnim(.75) }}>
+          <div style={{ ...heroAnim(.75) }}>
             <p style={{
               fontFamily:"'DM Sans',sans-serif", fontSize:"clamp(1rem,1.8vw,1.2rem)",
               color:"#7aaa90", maxWidth:460, lineHeight:1.7,
@@ -797,11 +543,11 @@ export default function Portfolio() {
           </div>
 
           {/* CTAs */}
-          <div className="hero-actions" style={{ ...heroAnim(1) }}>
-            <button className="cta-primary" onClick={() => scrollToSection("Projects")}>
+          <div style={{ ...heroAnim(1), display:"flex", gap:16, marginTop:44, flexWrap:"wrap", justifyContent:"center" }}>
+            <button className="cta-primary" onClick={() => document.getElementById("projects")?.scrollIntoView({behavior:"smooth"})}>
               View My Work →
             </button>
-            <button className="cta-ghost" onClick={() => scrollToSection("Contact")}>
+            <button className="cta-ghost" onClick={() => document.getElementById("contact")?.scrollIntoView({behavior:"smooth"})}>
               Get in Touch
             </button>
           </div>
@@ -818,7 +564,7 @@ export default function Portfolio() {
       <div style={{ background:"linear-gradient(175deg,#f2efe8 0%,#edf5ee 35%,#f5f5f0 70%,#f0ede6 100%)" }}>
 
         {/* ── PROJECTS ───────────────────────────────────────────────────── */}
-        <section id="projects" className="section-shell" style={{ paddingTop:120, paddingBottom:100 }}>
+        <section id="projects" style={{ padding:"120px 24px 100px" }}>
           <div style={{ maxWidth:1120, margin:"0 auto" }}>
             <FadeUp><span className="section-label">Selected Work</span></FadeUp>
             <FadeUp delay={.1}>
@@ -836,7 +582,7 @@ export default function Portfolio() {
         </section>
 
         {/* ── ABOUT ──────────────────────────────────────────────────────── */}
-        <section id="about" className="section-shell" style={{ paddingTop:100, paddingBottom:100 }}>
+        <section id="about" style={{ padding:"100px 24px" }}>
           <div style={{ maxWidth:1020, margin:"0 auto" }}>
             <FadeUp><span className="section-label">About Me</span></FadeUp>
             <div
@@ -888,7 +634,7 @@ export default function Portfolio() {
         </section>
 
         {/* ── EXPERIENCE ─────────────────────────────────────────────────── */}
-        <section id="experience" className="section-shell" style={{ paddingTop:100, paddingBottom:100 }}>
+        <section id="experience" style={{ padding:"100px 24px" }}>
           <div style={{ maxWidth:680, margin:"0 auto" }}>
             <FadeUp><span className="section-label">Experience</span></FadeUp>
             <FadeUp delay={.1}>
@@ -921,7 +667,7 @@ export default function Portfolio() {
         </section>
 
         {/* ── CONTACT ────────────────────────────────────────────────────── */}
-        <section id="contact" className="section-shell" style={{ paddingTop:100, paddingBottom:120 }}>
+        <section id="contact" style={{ padding:"100px 24px 120px" }}>
           <div style={{ maxWidth:560, margin:"0 auto", textAlign:"center" }}>
             <FadeUp><span className="section-label">Say Hello</span></FadeUp>
             <FadeUp delay={.1}>
@@ -947,7 +693,7 @@ export default function Portfolio() {
 
             {/* Social links */}
 <FadeUp delay={.45}>
-  <div className="contact-socials">
+  <div style={{ display:"flex", justifyContent:"center", gap:28, marginTop:48 }}>
     
     <a
       href="https://github.com/sadarshs"
@@ -972,8 +718,8 @@ export default function Portfolio() {
         </section>
 
         {/* ── FOOTER ─────────────────────────────────────────────────────── */}
-        <footer className="section-shell" style={{ borderTop:"1px solid rgba(45,122,80,.1)", paddingTop:28, paddingBottom:28 }}>
-          <div className="footer-inner" style={{ maxWidth:1120, margin:"0 auto" }}>
+        <footer style={{ borderTop:"1px solid rgba(45,122,80,.1)", padding:"28px 32px" }}>
+          <div style={{ maxWidth:1120, margin:"0 auto", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:12 }}>
             <span style={{ fontFamily:"'Syne',sans-serif", fontSize:13, color:"#7a9a88" }}>
               © 2024 Sadarsh · Built with Python, coffee & curiosity.
             </span>
